@@ -37,6 +37,12 @@ web/local_storage/
 # Claude Code harness state
 .claude/
 
+# Launch kit — marketing collateral (screenshots, video, brand assets, copy
+# drafts). Not source code, not needed to build/run the product, and some
+# of it (raw screen recordings, exported PNGs) is large binary content that
+# doesn't belong in git history — kept locally only.
+launch-kit/
+
 # OS / editor
 .DS_Store
 Thumbs.db

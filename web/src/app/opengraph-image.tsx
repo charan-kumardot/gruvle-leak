@@ -35,16 +35,13 @@ export default function OpengraphImage() {
           >
             <svg width="30" height="30" viewBox="0 0 32 32" fill="none">
               <path
-                d="M16 6C11.6 6 8 10.2 8 14.8C8 19.9 12.2 24.4 15.5 26.6C15.8 26.8 16.2 26.8 16.5 26.6C19.8 24.4 24 19.9 24 14.8C24 10.2 20.4 6 16 6Z"
-                fill="#C1512E"
-              />
-              <path
-                d="M12.2 15.3L14.8 17.9L19.8 12.4"
+                d="M10.21,22.89 A9,9 0 1 1 21.79,22.89"
                 stroke="#FAF9F7"
-                strokeWidth="1.8"
+                strokeWidth="2.6"
                 strokeLinecap="round"
-                strokeLinejoin="round"
+                fill="none"
               />
+              <circle cx="16" cy="25" r="2.3" fill="#C1512E" />
             </svg>
           </div>
           <span style={{ fontSize: 30, fontWeight: 600, color: "#0b0c0e" }}>Gruvle Leak</span>

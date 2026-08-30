@@ -4,6 +4,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/Button";
 import { HeroFindingCard } from "@/components/marketing/HeroFindingCard";
+import { AnimatedLogo } from "@/components/ui/AnimatedLogo";
 
 const EASE = [0.21, 0.47, 0.32, 0.98] as const;
 
@@ -58,6 +59,10 @@ export function Hero() {
 
       <div className="mx-auto grid max-w-6xl grid-cols-1 items-center gap-12 px-6 pb-20 pt-20 sm:pt-28 lg:grid-cols-[1.1fr_0.9fr] lg:gap-8">
         <div className="text-center lg:text-left">
+          <div className="mb-2 flex justify-center lg:justify-start">
+            <AnimatedLogo size={52} />
+          </div>
+
           <motion.p
             custom={0}
             initial="hidden"
