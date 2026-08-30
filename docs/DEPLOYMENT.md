@@ -2,6 +2,26 @@
 
 Target: free/low-cost infrastructure for the MVP, no paid infra mandatory to run it.
 
+## Live
+
+| | |
+|---|---|
+| Web (marketing + app) | https://gruvle-leak-web.vercel.app |
+| Worker API | https://gruvle-leak-worker.onrender.com |
+| GitHub | https://github.com/charan-kumardot/gruvle-leak (public — see note below) |
+
+**Render free tier note:** the worker spins down after ~15 minutes of inactivity and takes
+20-50 seconds to wake on the next request (a Render free-tier characteristic, not a bug).
+The first upload/scan/live-demo request after a quiet period will feel slow; upgrade the
+Render service to a paid plan for an always-on instance once real usage justifies it.
+
+**Repo visibility note:** the repo is public because Render's git integration couldn't reach
+it as private without a one-time GitHub OAuth authorization in the Render dashboard. No
+secrets are committed (verified repeatedly — all `.env`/`.env.local` files are git-ignored).
+To go back to private: flip visibility in GitHub settings, then complete that one-time
+Render authorization (dashboard.render.com -> New -> Web Service -> Connect GitHub) so
+auto-deploy on push keeps working.
+
 ## Components
 
 | Component | Where | Notes |
@@ -20,6 +40,14 @@ fill in real values. Never commit the filled-in files (already git-ignored).
 Required for the app to be more than demo-mode-only:
 - `APPWRITE_ENDPOINT`, `APPWRITE_PROJECT_ID`, `APPWRITE_API_KEY`, `APPWRITE_DATABASE_ID` (worker)
 - `NEXT_PUBLIC_APPWRITE_ENDPOINT`, `NEXT_PUBLIC_APPWRITE_PROJECT_ID` (web)
+- `WORKER_API_INTERNAL_TOKEN` — must be an identical strong random value on both sides
+  (worker's `.env` and web's Vercel env vars). Generate with
+  `python -c "import secrets; print(secrets.token_urlsafe(32))"`.
+- `CORS_ALLOWED_ORIGINS` (worker) — must include the deployed web app's exact origin, or
+  the browser-side live demo and any client-side Appwrite calls will be blocked.
+- `WORKER_API_URL` (web, server-only) and `NEXT_PUBLIC_WORKER_URL` (web, public — used only
+  by the marketing page's live demo, which calls `/demo/scan` straight from the browser) —
+  both point at the deployed worker's public URL.
 
 Optional (the app degrades gracefully without them):
 - `GEMINI_API_KEY` / `GROQ_API_KEY` / `OPENROUTER_API_KEY` — without any of these, column
