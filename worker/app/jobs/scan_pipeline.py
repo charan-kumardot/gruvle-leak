@@ -24,6 +24,7 @@ from appwrite.id import ID
 from appwrite.query import Query
 
 from app.ai.base import AIProviderError
+from app.db.client import get_databases
 from app.db.finding_repository import load_scan_findings, save_scan_findings
 from app.db.repositories import (
     create_business_scoped_document,
@@ -31,6 +32,7 @@ from app.db.repositories import (
     list_business_scoped,
     update_business_scoped_document,
 )
+from app.db.schema import DATABASE_ID
 from app.detectors.base import DatasetBundle, DetectionContext
 from app.detectors.registry import run_all_detectors
 from app.mapping.mapper import map_columns
@@ -77,6 +79,24 @@ async def process_dataset_upload(
     if not table.rows:
         raise ScanPipelineError("This file has no data rows to analyze.")
 
+    return await ingest_table(
+        business_id=business_id, team_id=team_id, table=table, filename=filename,
+        content_for_storage=content, content_type=declared_content_type, source="upload", source_connection_id=None,
+    )
+
+
+async def ingest_table(
+    *, business_id: str, team_id: str, table: ParsedTable, filename: str,
+    content_for_storage: bytes, content_type: str, source: str, source_connection_id: str | None,
+) -> dict:
+    """
+    Shared by both `process_dataset_upload` (a human uploads a file) and
+    `app/jobs/integration_sync.py` (a connected data source like Shopify is
+    synced) — profile, map, store, persist. A synced connection's rows are
+    serialized to CSV bytes by the caller before reaching here specifically
+    so this function, and the storage/re-parse round-trip `run_scan` later
+    does, never need to know the data didn't originate from a literal file.
+    """
     dataset_id = ID.unique()
     profile: DatasetProfile = profile_dataset(dataset_id, table)
 
@@ -91,7 +111,7 @@ async def process_dataset_upload(
     _, ext = os.path.splitext(filename.lower())
     storage_file_id = await storage.upload(
         bucket=FILES_BUCKET, file_id=f"upload-{dataset_id}", filename=f"upload/{dataset_id}/{filename}",
-        content=content, content_type=declared_content_type,
+        content=content_for_storage, content_type=content_type,
     )
 
     create_business_scoped_document(
@@ -100,11 +120,13 @@ async def process_dataset_upload(
             "kind": profile.inferred_kind.value,
             "original_filename": filename,
             "file_type": ext.lstrip("."),
-            "file_size_bytes": len(content),
+            "file_size_bytes": len(content_for_storage),
             "storage_file_id": storage_file_id,
             "row_count": profile.row_count,
             "column_count": profile.column_count,
             "processing_status": "profiled",
+            "source": source,
+            "source_connection_id": source_connection_id,
         },
         document_id=dataset_id,
     )
@@ -141,7 +163,7 @@ async def process_dataset_upload(
         "kind_confidence": profile.inferred_kind_confidence,
         "row_count": profile.row_count,
         "column_count": profile.column_count,
-        "warnings": profile.warnings,
+        "warnings": profile.warnings + table.warnings,
         "mapping": [
             {"raw_name": m.raw_name, "canonical_field": m.canonical_field.value if m.canonical_field else None,
              "confidence": m.confidence, "source": m.source, "reason": m.reason}
@@ -151,6 +173,50 @@ async def process_dataset_upload(
         "data_quality_score": quality.overall_score,
         "data_quality_explanations": quality.explanations,
     }
+
+
+def list_datasets(team_id: str, business_id: str) -> list[dict]:
+    docs = list_business_scoped("datasets", team_id, queries=[Query.equal("business_id", business_id)])
+    return [
+        {
+            "id": d["$id"],
+            "kind": d.get("kind"),
+            "original_filename": d.get("original_filename"),
+            "file_type": d.get("file_type"),
+            "row_count": d.get("row_count", 0),
+            "column_count": d.get("column_count", 0),
+            "source": d.get("source", "upload"),
+            "processing_status": d.get("processing_status"),
+            "created_at": d.get("$createdAt"),
+        }
+        for d in docs
+    ]
+
+
+async def delete_dataset(team_id: str, dataset_id: str) -> bool:
+    """
+    Deletes a dataset, its column profile, and its column mapping. Past
+    scans/findings that were computed from it are left alone (spec:
+    deleting a dataset is its own action — it doesn't retroactively
+    invalidate a report already generated from it).
+    """
+    dataset_doc = get_business_scoped("datasets", dataset_id, team_id)
+    if dataset_doc is None:
+        return False
+
+    for coll in ("dataset_columns", "data_mappings"):
+        for doc in list_business_scoped(coll, team_id, queries=[Query.equal("dataset_id", dataset_id)]):
+            get_databases().delete_document(DATABASE_ID, coll, doc["$id"])
+
+    storage_file_id = dataset_doc.get("storage_file_id")
+    if storage_file_id:
+        try:
+            await get_storage_provider().delete(bucket=FILES_BUCKET, file_id=storage_file_id)
+        except Exception:  # noqa: BLE001 — storage cleanup is best-effort, must not block the delete
+            pass
+
+    get_databases().delete_document(DATABASE_ID, "datasets", dataset_id)
+    return True
 
 
 def _load_mapping(team_id: str, dataset_id: str) -> DataMapping:

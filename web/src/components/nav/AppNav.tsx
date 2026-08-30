@@ -4,11 +4,13 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/Button";
+import { Wordmark } from "@/components/ui/Logo";
 
 const NAV_ITEMS = [
   { href: "/overview", label: "Overview", icon: OverviewIcon },
   { href: "/leaks", label: "Leaks", icon: LeaksIcon },
   { href: "/data", label: "Data", icon: DataIcon },
+  { href: "/integrations", label: "Integrations", icon: IntegrationsIcon },
   { href: "/reports", label: "Reports", icon: ReportsIcon },
   { href: "/actions", label: "Actions", icon: ActionsIcon },
   { href: "/settings", label: "Settings", icon: SettingsIcon },
@@ -33,8 +35,8 @@ export function AppNav() {
       {/* Desktop sidebar */}
       <aside className="hidden w-60 shrink-0 flex-col border-r border-ink-100 bg-white md:flex">
         <div className="px-6 py-6">
-          <Link href="/overview" className="text-lg font-semibold tracking-tight text-ink-950">
-            Gruvle Leak
+          <Link href="/overview" className="text-lg text-ink-950">
+            <Wordmark />
           </Link>
         </div>
 
@@ -77,8 +79,8 @@ export function AppNav() {
 
       {/* Mobile top bar */}
       <header className="flex items-center justify-between border-b border-ink-100 bg-white px-4 py-3 md:hidden">
-        <Link href="/overview" className="text-base font-semibold tracking-tight text-ink-950">
-          Gruvle Leak
+        <Link href="/overview" className="text-base text-ink-950">
+          <Wordmark />
         </Link>
         <div className="flex items-center gap-2">
           <Link href="/data">
@@ -145,6 +147,16 @@ function DataIcon({ active }: IconProps) {
     <svg viewBox="0 0 20 20" fill="none" className={iconClass(active)} aria-hidden="true">
       <path d="M4 6l6-3 6 3-6 3-6-3z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
       <path d="M4 10l6 3 6-3M4 14l6 3 6-3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function IntegrationsIcon({ active }: IconProps) {
+  return (
+    <svg viewBox="0 0 20 20" fill="none" className={iconClass(active)} aria-hidden="true">
+      <circle cx="6" cy="6" r="2.5" stroke="currentColor" strokeWidth="1.5" />
+      <circle cx="14" cy="14" r="2.5" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M8 7.5l4 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
     </svg>
   );
 }

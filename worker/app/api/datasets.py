@@ -3,7 +3,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 
 from app.api.deps import require_internal_token
-from app.jobs.scan_pipeline import ScanPipelineError, process_dataset_upload
+from app.jobs.scan_pipeline import ScanPipelineError, delete_dataset, list_datasets, process_dataset_upload
 
 router = APIRouter(dependencies=[Depends(require_internal_token)])
 
@@ -29,3 +29,16 @@ async def upload_dataset(
         raise HTTPException(status_code=422, detail=str(e)) from e
 
     return result
+
+
+@router.get("")
+def get_datasets(business_id: str, team_id: str):
+    return {"datasets": list_datasets(team_id, business_id)}
+
+
+@router.delete("/{dataset_id}")
+async def remove_dataset(dataset_id: str, team_id: str):
+    ok = await delete_dataset(team_id, dataset_id)
+    if not ok:
+        raise HTTPException(status_code=404, detail="Dataset not found.")
+    return {"deleted": True}

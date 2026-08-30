@@ -95,6 +95,128 @@ export async function downloadReport(scanId: string, teamId: string, format: Rep
   URL.revokeObjectURL(url);
 }
 
+// --- Datasets ---
+
+export interface DatasetSummary {
+  id: string;
+  kind: string;
+  original_filename: string;
+  file_type: string;
+  row_count: number;
+  column_count: number;
+  source: string;
+  processing_status: string;
+  created_at: string;
+}
+
+export async function listDatasets(businessId: string, teamId: string): Promise<DatasetSummary[]> {
+  const jwt = await freshJwt();
+  const res = await fetch(`/api/datasets?businessId=${encodeURIComponent(businessId)}&teamId=${encodeURIComponent(teamId)}`, {
+    headers: { Authorization: `Bearer ${jwt}` },
+  });
+  if (!res.ok) throw new ApiClientError(await readDetail(res));
+  const body = await res.json();
+  return body.datasets;
+}
+
+export async function deleteDataset(datasetId: string, teamId: string): Promise<void> {
+  const jwt = await freshJwt();
+  const res = await fetch(`/api/datasets/${encodeURIComponent(datasetId)}?teamId=${encodeURIComponent(teamId)}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${jwt}` },
+  });
+  if (!res.ok) throw new ApiClientError(await readDetail(res));
+}
+
+// --- Account ---
+
+/** Irreversible — deletes the business's data, Team, and the caller's own Appwrite account. */
+export async function deleteMyAccount(businessId: string, teamId: string): Promise<void> {
+  const jwt = await freshJwt();
+  const res = await fetch("/api/account/delete", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${jwt}` },
+    body: JSON.stringify({ businessId, teamId }),
+  });
+  if (!res.ok) throw new ApiClientError(await readDetail(res));
+}
+
+// --- Integrations ---
+
+export interface IntegrationProvider {
+  key: string;
+  label: string;
+  available: boolean;
+}
+
+export interface IntegrationConnection {
+  id: string;
+  provider: string;
+  display_name: string;
+  status: "connected" | "error" | "disconnected";
+  last_error?: string | null;
+  last_synced_at?: string | null;
+  created_at: string;
+}
+
+export async function listIntegrationProviders(): Promise<IntegrationProvider[]> {
+  const res = await fetch("/api/integrations/providers");
+  if (!res.ok) throw new ApiClientError(await readDetail(res));
+  const body = await res.json();
+  return body.providers;
+}
+
+export async function listIntegrationConnections(businessId: string, teamId: string): Promise<IntegrationConnection[]> {
+  const jwt = await freshJwt();
+  const res = await fetch(`/api/integrations/connections?businessId=${encodeURIComponent(businessId)}&teamId=${encodeURIComponent(teamId)}`, {
+    headers: { Authorization: `Bearer ${jwt}` },
+  });
+  if (!res.ok) throw new ApiClientError(await readDetail(res));
+  const body = await res.json();
+  return body.connections;
+}
+
+export async function connectIntegration(
+  businessId: string,
+  teamId: string,
+  userId: string,
+  provider: string,
+  credentials: Record<string, string>
+): Promise<IntegrationConnection> {
+  const jwt = await freshJwt();
+  const res = await fetch("/api/integrations/connections", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${jwt}` },
+    body: JSON.stringify({ businessId, teamId, userId, provider, credentials }),
+  });
+  if (!res.ok) throw new ApiClientError(await readDetail(res));
+  return res.json();
+}
+
+export async function disconnectIntegration(connectionId: string, teamId: string): Promise<void> {
+  const jwt = await freshJwt();
+  const res = await fetch(`/api/integrations/connections/${encodeURIComponent(connectionId)}?teamId=${encodeURIComponent(teamId)}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${jwt}` },
+  });
+  if (!res.ok) throw new ApiClientError(await readDetail(res));
+}
+
+export async function syncIntegration(
+  connectionId: string,
+  businessId: string,
+  teamId: string
+): Promise<{ dataset_id: string; row_count: number; kind: string; warnings: string[] }> {
+  const jwt = await freshJwt();
+  const res = await fetch(`/api/integrations/connections/${encodeURIComponent(connectionId)}/sync`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${jwt}` },
+    body: JSON.stringify({ businessId, teamId }),
+  });
+  if (!res.ok) throw new ApiClientError(await readDetail(res));
+  return res.json();
+}
+
 async function readDetail(res: Response): Promise<string> {
   try {
     const body = await res.json();

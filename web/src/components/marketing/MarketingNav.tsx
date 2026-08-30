@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
+import { Wordmark } from "@/components/ui/Logo";
 
 function NavLink({ href, children }: { href: string; children: React.ReactNode }) {
   return (
@@ -16,8 +17,8 @@ export function MarketingNav() {
   return (
     <header className="sticky top-0 z-30 border-b border-ink-100 bg-paper/85 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-        <Link href="/" className="text-lg font-semibold tracking-tight text-ink-950">
-          Gruvle Leak
+        <Link href="/" className="text-lg text-ink-950">
+          <Wordmark />
         </Link>
         <nav className="hidden items-center gap-8 text-sm font-medium text-ink-500 md:flex">
           <NavLink href="#how-it-works">How it works</NavLink>

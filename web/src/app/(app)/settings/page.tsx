@@ -4,10 +4,12 @@ import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardBody, CardHeader } from "@/components/ui/Card";
 import { Select } from "@/components/ui/Select";
+import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/lib/auth-context";
 import { useCurrentBusiness } from "@/lib/use-current-business";
-import { APPWRITE_DATABASE_ID, COLLECTIONS, databases } from "@/lib/appwrite";
+import { APPWRITE_DATABASE_ID, COLLECTIONS, account, databases } from "@/lib/appwrite";
+import { deleteMyAccount, ApiClientError } from "@/lib/api-client";
 import type { CurrencyCode, Industry } from "@/lib/types";
 
 const INDUSTRIES: { value: Industry; label: string }[] = [
@@ -36,6 +38,16 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [passwordSaving, setPasswordSaving] = useState(false);
+  const [passwordSaved, setPasswordSaved] = useState(false);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   useEffect(() => {
     if (business) {
@@ -67,6 +79,37 @@ export default function SettingsPage() {
   async function handleLogout() {
     await logout();
     router.push("/login");
+  }
+
+  async function handleChangePassword(e: FormEvent) {
+    e.preventDefault();
+    setPasswordSaving(true);
+    setPasswordError(null);
+    setPasswordSaved(false);
+    try {
+      await account.updatePassword(newPassword, currentPassword);
+      setCurrentPassword("");
+      setNewPassword("");
+      setPasswordSaved(true);
+    } catch (err) {
+      setPasswordError(err instanceof Error ? err.message : "Could not update your password.");
+    } finally {
+      setPasswordSaving(false);
+    }
+  }
+
+  async function handleDeleteAccount() {
+    if (!business || deleteConfirmText !== business.name) return;
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      await deleteMyAccount(business.id, business.team_id);
+      await logout();
+      router.push("/");
+    } catch (err) {
+      setDeleteError(err instanceof ApiClientError ? err.message : "Could not delete your account.");
+      setDeleting(false);
+    }
   }
 
   return (
@@ -153,6 +196,73 @@ export default function SettingsPage() {
           )}
         </CardBody>
       </Card>
+
+      <Card>
+        <CardHeader>
+          <h2 className="text-base font-semibold text-ink-900">Change password</h2>
+        </CardHeader>
+        <CardBody>
+          <form onSubmit={handleChangePassword} className="flex flex-col gap-4">
+            <Input
+              label="Current password"
+              type="password"
+              autoComplete="current-password"
+              required
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+            />
+            <Input
+              label="New password"
+              type="password"
+              autoComplete="new-password"
+              required
+              minLength={8}
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+            />
+            {passwordError && <p className="text-sm text-accent-600">{passwordError}</p>}
+            {passwordSaved && <p className="text-sm text-risk-low">Password updated.</p>}
+            <div>
+              <Button type="submit" size="sm" disabled={passwordSaving}>
+                {passwordSaving ? "Updating…" : "Update password"}
+              </Button>
+            </div>
+          </form>
+        </CardBody>
+      </Card>
+
+      {business && (
+        <Card className="border-accent-200">
+          <CardHeader>
+            <h2 className="text-base font-semibold text-accent-700">Danger zone</h2>
+            <p className="mt-1 text-xs text-ink-500">
+              Permanently deletes your business&apos;s data — every dataset, scan, finding, report,
+              and connection — along with your account. This cannot be undone.
+            </p>
+          </CardHeader>
+          <CardBody className="flex flex-col gap-3">
+            <p className="text-sm text-ink-700">
+              Type <strong>{business.name}</strong> to confirm.
+            </p>
+            <Input
+              value={deleteConfirmText}
+              onChange={(e) => setDeleteConfirmText(e.target.value)}
+              placeholder={business.name}
+            />
+            {deleteError && <p className="text-sm text-accent-600">{deleteError}</p>}
+            <div>
+              <Button
+                variant="danger"
+                size="sm"
+                disabled={deleteConfirmText !== business.name || deleting}
+                onClick={handleDeleteAccount}
+              >
+                {deleting ? "Deleting…" : "Delete my account and all data"}
+              </Button>
+            </div>
+          </CardBody>
+        </Card>
+      )}
     </div>
   );
 }

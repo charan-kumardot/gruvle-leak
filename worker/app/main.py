@@ -66,11 +66,15 @@ def health():
 
 
 # Routers are registered here as each API module lands.
+from app.api.account import router as account_router  # noqa: E402
 from app.api.datasets import router as datasets_router  # noqa: E402
 from app.api.demo import router as demo_router  # noqa: E402
+from app.api.integrations import router as integrations_router  # noqa: E402
 from app.api.scans import finding_router, router as scans_router  # noqa: E402
 
 app.include_router(demo_router, prefix="/demo", tags=["demo"])
 app.include_router(datasets_router, prefix="/datasets", tags=["datasets"])
 app.include_router(scans_router, prefix="/scans", tags=["scans"])
+app.include_router(integrations_router, prefix="/integrations", tags=["integrations"])
 app.include_router(finding_router, prefix="/findings", tags=["findings"])
+app.include_router(account_router, prefix="/account", tags=["account"])

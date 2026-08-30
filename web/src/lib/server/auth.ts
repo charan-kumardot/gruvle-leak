@@ -21,7 +21,7 @@
  */
 import "server-only";
 
-import { Client, Teams } from "appwrite";
+import { Account, Client, Teams } from "appwrite";
 
 export class UnauthorizedError extends Error {}
 
@@ -47,5 +47,28 @@ export async function requireTeamMembership(jwt: string, teamId: string): Promis
     await teams.get(teamId);
   } catch {
     throw new UnauthorizedError("You do not have access to this business.");
+  }
+}
+
+/**
+ * Resolves the REAL user id behind a JWT by asking Appwrite directly —
+ * never trust a client-supplied userId for anything destructive (e.g.
+ * account deletion). A JWT can't be forged to claim a different user's
+ * identity, so this is the only trustworthy source of "who is this."
+ */
+export async function requireOwnUserId(jwt: string): Promise<string> {
+  const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT;
+  const projectId = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID;
+  if (!endpoint || !projectId) {
+    throw new UnauthorizedError("Appwrite is not configured on the server.");
+  }
+
+  const client = new Client().setEndpoint(endpoint).setProject(projectId).setJWT(jwt);
+  const account = new Account(client);
+  try {
+    const me = await account.get();
+    return me.$id;
+  } catch {
+    throw new UnauthorizedError("This session is no longer valid — please log in again.");
   }
 }

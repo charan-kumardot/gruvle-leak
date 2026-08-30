@@ -144,6 +144,14 @@ COLLECTIONS: list[CollectionDef] = [
             Attribute("processing_status", AttrType.ENUM,
                       elements=["pending", "processing", "profiled", "failed"], default="pending"),
             Attribute("error_message", AttrType.STRING, size=1024),
+            # Where this dataset's rows came from — a manual file upload, or a
+            # synced connection (see `data_source_connections` below). Defaults
+            # to "upload" so every dataset created before this field existed
+            # keeps working unchanged.
+            Attribute("source", AttrType.ENUM,
+                      elements=["upload", "shopify", "hubspot", "quickbooks", "zoho", "salesforce"],
+                      default="upload"),
+            Attribute("source_connection_id", AttrType.STRING, size=64),
             Attribute("is_deleted", AttrType.BOOLEAN, default=False),
         ],
         indexes=[
@@ -368,6 +376,35 @@ COLLECTIONS: list[CollectionDef] = [
             Attribute("reason", AttrType.STRING, size=1024),
         ],
         indexes=[Index("idx_finding", "key", ["finding_id"]), _team_index()],
+    ),
+    CollectionDef(
+        id="data_source_connections",
+        name="Data Source Connections",
+        # No client access at all — not even read. Unlike every other
+        # business-scoped collection, this one holds a live external API
+        # credential (e.g. a Shopify Admin API access token). The browser
+        # must never see the raw token, so it never gets document-level read
+        # permission here either; the web app only ever sees a sanitized
+        # view returned by the worker's own /integrations endpoints (see
+        # worker/app/api/integrations.py), which reads this collection with
+        # the privileged server key.
+        permissions=[],
+        attributes=[
+            Attribute("business_id", AttrType.STRING, size=64, required=True),
+            _team_attr(),
+            Attribute("provider", AttrType.ENUM,
+                      elements=["shopify", "hubspot", "quickbooks", "zoho", "salesforce"], required=True),
+            Attribute("display_name", AttrType.STRING, size=256, required=True),  # e.g. "my-store.myshopify.com"
+            Attribute("credentials_json", AttrType.STRING, size=4096, required=True),  # provider-specific, opaque
+            Attribute("status", AttrType.ENUM, elements=["connected", "error", "disconnected"], default="connected"),
+            Attribute("last_error", AttrType.STRING, size=1024),
+            Attribute("last_synced_at", AttrType.DATETIME),
+            Attribute("created_by_user_id", AttrType.STRING, size=64, required=True),
+        ],
+        indexes=[
+            Index("idx_business", "key", ["business_id"]),
+            _team_index(),
+        ],
     ),
 ]
 

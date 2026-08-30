@@ -10,13 +10,16 @@
  * No detection/calculation logic belongs here — this file only shapes and
  * moves data to/from the real, live worker endpoints (see worker/app/api/).
  *
- * Only the three operations that genuinely need the Python worker live here:
- * uploading + parsing a file, running detection, and rendering a report
- * export. Everything else (listing scans, reading findings, confirming /
- * dismissing a finding) reads and writes Appwrite directly from the client
- * via the Web SDK (see src/lib/scans-client.ts) — those documents are
- * already team-permissioned in Appwrite, so proxying them through here
- * would just be reimplementing access control Appwrite already enforces.
+ * Only operations that genuinely need the Python worker live here: uploading
+ * + parsing a file, running detection, rendering a report export, and
+ * managing data source connections (Shopify etc. — these hold a live
+ * external API credential the browser must never see, so the worker is the
+ * only thing that ever reads/writes them). Everything else (listing scans,
+ * reading findings, confirming / dismissing a finding) reads and writes
+ * Appwrite directly from the client via the Web SDK (see
+ * src/lib/scans-client.ts) — those documents are already team-permissioned
+ * in Appwrite, so proxying them through here would just be reimplementing
+ * access control Appwrite already enforces.
  */
 import "server-only";
 
@@ -116,6 +119,41 @@ export async function uploadDataset(params: UploadDatasetParams): Promise<Datase
   return workerJson<DatasetUploadResult>("/datasets/upload", { method: "POST", body: form });
 }
 
+export interface DatasetSummary {
+  id: string;
+  kind: string;
+  original_filename: string;
+  file_type: string;
+  row_count: number;
+  column_count: number;
+  source: string;
+  processing_status: string;
+  created_at: string;
+}
+
+/** GET /datasets — list datasets already uploaded/synced for a business. */
+export async function listDatasets(businessId: string, teamId: string): Promise<DatasetSummary[]> {
+  const data = await workerJson<{ datasets: DatasetSummary[] }>(
+    `/datasets?business_id=${encodeURIComponent(businessId)}&team_id=${encodeURIComponent(teamId)}`
+  );
+  return data.datasets;
+}
+
+/** DELETE /datasets/:id — removes a dataset and its profile/mapping (past scans/findings are untouched). */
+export async function deleteDataset(datasetId: string, teamId: string): Promise<void> {
+  await workerFetch(`/datasets/${encodeURIComponent(datasetId)}?team_id=${encodeURIComponent(teamId)}`, {
+    method: "DELETE",
+  });
+}
+
+/** POST /account/delete — irreversibly deletes the business's data, Team, and the given Appwrite user. */
+export async function deleteAccountAndBusiness(businessId: string, teamId: string, userId: string): Promise<void> {
+  await workerFetch("/account/delete", {
+    method: "POST",
+    body: JSON.stringify({ business_id: businessId, team_id: teamId, user_id: userId }),
+  });
+}
+
 export interface CreateScanParams {
   businessId: string;
   teamId: string;
@@ -165,4 +203,72 @@ export async function getReport(scanId: string, teamId: string, format: ReportFo
   const match = disposition.match(/filename=([^;]+)/);
   const filename = match?.[1]?.trim() ?? `scan-${scanId}-report.${format}`;
   return { contentType, filename, body: await res.arrayBuffer() };
+}
+
+// --- Integrations (Shopify today; HubSpot/QuickBooks/Zoho/Salesforce registered as "coming soon") ---
+
+export interface IntegrationProvider {
+  key: string;
+  label: string;
+  available: boolean;
+}
+
+/** GET /integrations/providers */
+export async function listIntegrationProviders(): Promise<IntegrationProvider[]> {
+  const data = await workerJson<{ providers: IntegrationProvider[] }>("/integrations/providers");
+  return data.providers;
+}
+
+export interface IntegrationConnection {
+  id: string;
+  provider: string;
+  display_name: string;
+  status: "connected" | "error" | "disconnected";
+  last_error?: string | null;
+  last_synced_at?: string | null;
+  created_at: string;
+}
+
+/** GET /integrations/connections — sanitized, never includes credentials. */
+export async function listIntegrationConnections(businessId: string, teamId: string): Promise<IntegrationConnection[]> {
+  const data = await workerJson<{ connections: IntegrationConnection[] }>(
+    `/integrations/connections?business_id=${encodeURIComponent(businessId)}&team_id=${encodeURIComponent(teamId)}`
+  );
+  return data.connections;
+}
+
+export interface ConnectIntegrationParams {
+  businessId: string;
+  teamId: string;
+  userId: string;
+  provider: string;
+  credentials: Record<string, string>;
+}
+
+/** POST /integrations/connections — tests the credentials, then stores them (worker-only, never client-readable). */
+export async function connectIntegration(params: ConnectIntegrationParams): Promise<IntegrationConnection> {
+  return workerJson<IntegrationConnection>("/integrations/connections", {
+    method: "POST",
+    body: JSON.stringify({
+      business_id: params.businessId, team_id: params.teamId, user_id: params.userId,
+      provider: params.provider, credentials: params.credentials,
+    }),
+  });
+}
+
+/** DELETE /integrations/connections/:id */
+export async function disconnectIntegration(connectionId: string, teamId: string): Promise<void> {
+  await workerFetch(`/integrations/connections/${encodeURIComponent(connectionId)}?team_id=${encodeURIComponent(teamId)}`, {
+    method: "DELETE",
+  });
+}
+
+/** POST /integrations/connections/:id/sync — pulls fresh data through the same pipeline a file upload uses. */
+export async function syncIntegration(
+  connectionId: string, businessId: string, teamId: string
+): Promise<{ dataset_id: string; row_count: number; kind: string; warnings: string[] }> {
+  return workerJson(`/integrations/connections/${encodeURIComponent(connectionId)}/sync`, {
+    method: "POST",
+    body: JSON.stringify({ business_id: businessId, team_id: teamId }),
+  });
 }
