@@ -37,6 +37,11 @@ web/local_storage/
 # Claude Code harness state
 .claude/
 
+# Root-level tooling for scripts/capture-launch-kit.mjs only — not a real
+# subproject, just a local dependency for regenerating launch-kit/ assets.
+/package.json
+/package-lock.json
+
 # Launch kit — marketing collateral (screenshots, video, brand assets, copy
 # drafts). Not source code, not needed to build/run the product, and some
 # of it (raw screen recordings, exported PNGs) is large binary content that
