@@ -1,0 +1,48 @@
+# Secrets — never commit
+.env
+.env.local
+.env.*.local
+**/.env
+**/.env.local
+!.env.example
+!**/.env.example
+
+# Node
+node_modules/
+.next/
+out/
+dist/
+build/
+.turbo/
+*.tsbuildinfo
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-lock.yaml.bak
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Local storage stand-in for object storage (dev only)
+worker/local_storage/
+web/local_storage/
+
+# Claude Code harness state
+.claude/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+
+# Logs
+*.log
+logs/

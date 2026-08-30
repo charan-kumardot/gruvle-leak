@@ -1,0 +1,8 @@
+[
+  {"order_id": 1, "customer_name": "Acme Corp", "total": 100.00},
+  {"order_id": 2, "customer_name": "Beta LLC", "total": 250.50},
+  {"order_id": 3, "customer_name": "Gamma Inc", "total": 75.25},
+  {"order_id": 4, "customer_name": "Acme Corp", "total": 300.00},
+  {"order_id": 5, "customer_name": "Delta Co", "total": 999.99},
+  {"order_id": 6, "customer_name": "Epsilon LLC", "total": 10.00}
+]
