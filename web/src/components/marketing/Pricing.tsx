@@ -1,10 +1,13 @@
+"use client";
+
 import Link from "next/link";
+import { motion } from "framer-motion";
 import { Button } from "@/components/ui/Button";
+import { Reveal, RevealGroup, RevealItem } from "@/components/marketing/Reveal";
 
 interface Tier {
   name: string;
   price: string;
-  priceNote?: string;
   description: string;
   features: string[];
   cta: string;
@@ -52,53 +55,61 @@ export function Pricing() {
   return (
     <section id="pricing" className="border-t border-ink-100">
       <div className="mx-auto max-w-6xl px-6 py-20">
-        <div className="mx-auto max-w-2xl text-center">
+        <Reveal className="mx-auto max-w-2xl text-center">
           <p className="text-xs font-semibold uppercase tracking-wide text-accent-500">Pricing</p>
           <h2 className="mt-3 text-2xl font-semibold tracking-tight text-ink-950 sm:text-3xl">
             Start free. Pay only once it&apos;s finding you money.
           </h2>
           <p className="mt-3 text-sm leading-relaxed text-ink-500 sm:text-base">
-            Gruvle is in early access — paid tier pricing is still being finalized based on
-            what early customers actually need. The free tier is fully functional today.
+            Gruvle is in early access — paid pricing is still being finalized. The free tier is
+            fully functional today.
           </p>
-        </div>
+        </Reveal>
 
-        <div className="mt-14 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <RevealGroup className="mt-14 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4" stagger={0.07}>
           {TIERS.map((tier) => (
-            <div
-              key={tier.name}
-              className={`flex flex-col rounded-xl border p-6 ${
-                tier.highlighted ? "border-ink-900 bg-ink-950 text-white shadow-card" : "border-ink-100 bg-white shadow-card"
-              }`}
-            >
-              <h3 className={`text-sm font-semibold ${tier.highlighted ? "text-white" : "text-ink-900"}`}>
-                {tier.name}
-              </h3>
-              <p className={`mt-3 text-2xl font-semibold tracking-tight ${tier.highlighted ? "text-white" : "text-ink-950"}`}>
-                {tier.price}
-              </p>
-              <p className={`mt-3 text-sm leading-relaxed ${tier.highlighted ? "text-ink-300" : "text-ink-500"}`}>
-                {tier.description}
-              </p>
-              <ul className="mt-5 flex flex-1 flex-col gap-2.5">
-                {tier.features.map((f) => (
-                  <li
-                    key={f}
-                    className={`flex items-start gap-2 text-sm ${tier.highlighted ? "text-ink-200" : "text-ink-600"}`}
+            <RevealItem key={tier.name}>
+              <motion.div
+                whileHover={{ y: -6 }}
+                transition={{ type: "spring", stiffness: 300, damping: 22 }}
+                className={`flex h-full flex-col rounded-xl border p-6 transition-shadow hover:shadow-lg ${
+                  tier.highlighted
+                    ? "border-ink-900 bg-ink-950 text-white shadow-card"
+                    : "border-ink-100 bg-white shadow-card"
+                }`}
+              >
+                <h3 className={`text-sm font-semibold ${tier.highlighted ? "text-white" : "text-ink-900"}`}>
+                  {tier.name}
+                </h3>
+                <p className={`mt-3 text-2xl font-semibold tracking-tight ${tier.highlighted ? "text-white" : "text-ink-950"}`}>
+                  {tier.price}
+                </p>
+                <p className={`mt-3 text-sm leading-relaxed ${tier.highlighted ? "text-ink-300" : "text-ink-500"}`}>
+                  {tier.description}
+                </p>
+                <ul className="mt-5 flex flex-1 flex-col gap-2.5">
+                  {tier.features.map((f) => (
+                    <li
+                      key={f}
+                      className={`flex items-start gap-2 text-sm ${tier.highlighted ? "text-ink-200" : "text-ink-600"}`}
+                    >
+                      <span className={`mt-1.5 h-1 w-1 shrink-0 rounded-full ${tier.highlighted ? "bg-ink-400" : "bg-ink-300"}`} />
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+                <Link href={tier.href} className="mt-6">
+                  <Button
+                    variant={tier.highlighted ? "secondary" : "primary"}
+                    className="w-full transition-transform hover:scale-[1.02] active:scale-[0.98]"
                   >
-                    <span className={`mt-1.5 h-1 w-1 shrink-0 rounded-full ${tier.highlighted ? "bg-ink-400" : "bg-ink-300"}`} />
-                    {f}
-                  </li>
-                ))}
-              </ul>
-              <Link href={tier.href} className="mt-6">
-                <Button variant={tier.highlighted ? "secondary" : "primary"} className="w-full">
-                  {tier.cta}
-                </Button>
-              </Link>
-            </div>
+                    {tier.cta}
+                  </Button>
+                </Link>
+              </motion.div>
+            </RevealItem>
           ))}
-        </div>
+        </RevealGroup>
       </div>
     </section>
   );

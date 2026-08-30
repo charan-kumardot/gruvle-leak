@@ -1,5 +1,16 @@
+"use client";
+
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
+
+function NavLink({ href, children }: { href: string; children: React.ReactNode }) {
+  return (
+    <a href={href} className="group relative py-1 hover:text-ink-900">
+      {children}
+      <span className="absolute inset-x-0 -bottom-0.5 h-px scale-x-0 bg-ink-900 transition-transform duration-200 group-hover:scale-x-100" />
+    </a>
+  );
+}
 
 export function MarketingNav() {
   return (
@@ -9,25 +20,19 @@ export function MarketingNav() {
           Gruvle Leak
         </Link>
         <nav className="hidden items-center gap-8 text-sm font-medium text-ink-500 md:flex">
-          <a href="#how-it-works" className="hover:text-ink-900">
-            How it works
-          </a>
-          <a href="#live-demo" className="hover:text-ink-900">
-            Live demo
-          </a>
-          <a href="#pricing" className="hover:text-ink-900">
-            Pricing
-          </a>
-          <a href="#faq" className="hover:text-ink-900">
-            FAQ
-          </a>
+          <NavLink href="#how-it-works">How it works</NavLink>
+          <NavLink href="#live-demo">Live demo</NavLink>
+          <NavLink href="#pricing">Pricing</NavLink>
+          <NavLink href="#faq">FAQ</NavLink>
         </nav>
         <div className="flex items-center gap-3">
           <Link href="/login" className="hidden text-sm font-medium text-ink-600 hover:text-ink-950 sm:inline">
             Log in
           </Link>
           <Link href="/signup">
-            <Button size="sm">Find my leaks</Button>
+            <Button size="sm" className="transition-transform hover:scale-[1.04] active:scale-[0.97]">
+              Find my leaks
+            </Button>
           </Link>
         </div>
       </div>

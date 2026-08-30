@@ -2,8 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { AnimatePresence, motion } from "framer-motion";
 import { Button } from "@/components/ui/Button";
 import { Badge, ConfidenceBadge } from "@/components/ui/Badge";
+import { Reveal } from "@/components/marketing/Reveal";
+import { AnimatedCounter } from "@/components/marketing/AnimatedCounter";
 
 interface DemoFinding {
   id: string;
@@ -95,164 +98,238 @@ export function LiveDemo() {
 
   useEffect(() => () => stopStepper(), []);
 
+  const potentialLeakage = data?.impact_totals[0];
+
   return (
     <section id="live-demo" className="border-t border-ink-100 bg-white">
       <div className="mx-auto max-w-5xl px-6 py-20">
-        <div className="mx-auto max-w-2xl text-center">
+        <Reveal className="mx-auto max-w-2xl text-center">
           <p className="text-xs font-semibold uppercase tracking-wide text-accent-500">See it work</p>
           <h2 className="mt-3 text-2xl font-semibold tracking-tight text-ink-950 sm:text-3xl">
             Watch Gruvle find real leaks — live, right now.
           </h2>
           <p className="mt-3 text-sm leading-relaxed text-ink-500 sm:text-base">
-            This runs the actual detection engine against a synthetic retail business — not a
-            mockup, not pre-recorded. Click through the evidence for any finding, the same way
-            you would with your own data.
+            Runs the actual detection engine against a synthetic retail business. Click any
+            finding to see its evidence, the same way you would with your own data.
           </p>
-        </div>
+        </Reveal>
 
         <div className="mx-auto mt-10 max-w-3xl">
-          {status === "idle" && (
-            <div className="flex flex-col items-center gap-4 rounded-xl border border-dashed border-ink-200 bg-paper px-6 py-16 text-center">
-              <Button size="lg" onClick={runDemo}>
-                Run the live demo
-              </Button>
-              <p className="text-xs text-ink-400">Runs Gruvle&apos;s real detectors on synthetic demo data — no signup needed.</p>
-            </div>
-          )}
+          <AnimatePresence mode="wait">
+            {status === "idle" && (
+              <motion.div
+                key="idle"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="flex flex-col items-center gap-4 rounded-xl border border-dashed border-ink-200 bg-paper px-6 py-16 text-center"
+              >
+                <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}>
+                  <Button size="lg" onClick={runDemo}>
+                    Run the live demo
+                  </Button>
+                </motion.div>
+                <p className="text-xs text-ink-400">Runs Gruvle&apos;s real detectors on synthetic demo data — no signup needed.</p>
+              </motion.div>
+            )}
 
-          {status === "loading" && (
-            <div className="flex flex-col items-center gap-4 rounded-xl border border-ink-100 bg-paper px-6 py-16 text-center">
-              <span className="h-5 w-5 animate-spin rounded-full border-2 border-ink-200 border-t-ink-600" />
-              <p className="text-sm font-medium text-ink-700">{LOADING_STEPS[step]}</p>
-            </div>
-          )}
+            {status === "loading" && (
+              <motion.div
+                key="loading"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="flex flex-col items-center gap-4 rounded-xl border border-ink-100 bg-paper px-6 py-16 text-center"
+              >
+                <span className="h-5 w-5 animate-spin rounded-full border-2 border-ink-200 border-t-ink-600" />
+                <AnimatePresence mode="wait">
+                  <motion.p
+                    key={step}
+                    initial={{ opacity: 0, y: 4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -4 }}
+                    transition={{ duration: 0.2 }}
+                    className="text-sm font-medium text-ink-700"
+                  >
+                    {LOADING_STEPS[step]}
+                  </motion.p>
+                </AnimatePresence>
+              </motion.div>
+            )}
 
-          {status === "error" && (
-            <div className="flex flex-col items-center gap-3 rounded-xl border border-accent-200 bg-accent-50 px-6 py-12 text-center">
-              <p className="text-sm text-accent-700">
-                Couldn&apos;t reach the live demo service right now.
-              </p>
-              <Button variant="secondary" size="sm" onClick={runDemo}>
-                Try again
-              </Button>
-            </div>
-          )}
+            {status === "error" && (
+              <motion.div
+                key="error"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="flex flex-col items-center gap-3 rounded-xl border border-accent-200 bg-accent-50 px-6 py-12 text-center"
+              >
+                <p className="text-sm text-accent-700">Couldn&apos;t reach the live demo service right now.</p>
+                <Button variant="secondary" size="sm" onClick={runDemo}>
+                  Try again
+                </Button>
+              </motion.div>
+            )}
 
-          {status === "done" && data && (
-            <div className="flex flex-col gap-6">
-              <div className="flex items-center justify-between rounded-lg bg-ink-950 px-4 py-2.5 text-xs font-medium text-white">
-                <span>DEMO DATA — {data.business_name}</span>
-                <span className="text-ink-300">{data.records_analyzed.toLocaleString()} records analyzed</span>
-              </div>
+            {status === "done" && data && (
+              <motion.div
+                key="done"
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4 }}
+                className="flex flex-col gap-6"
+              >
+                <div className="flex items-center justify-between rounded-lg bg-ink-950 px-4 py-2.5 text-xs font-medium text-white">
+                  <span>DEMO DATA — {data.business_name}</span>
+                  <span className="text-ink-300">
+                    <AnimatedCounter value={data.records_analyzed} /> records analyzed
+                  </span>
+                </div>
 
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                {data.impact_totals.slice(0, 1).map((t) => (
-                  <StatBlock key="pl" label="Potential leakage" value={money(t.currency, t.amount, false)} risk />
-                ))}
-                {data.impact_totals.length === 0 && <StatBlock label="Potential leakage" value="—" risk />}
-                <StatBlock label="High confidence" value={String(data.high_confidence_count)} />
-                <StatBlock label="Findings" value={String(data.finding_count)} />
-                <StatBlock label="Records analyzed" value={data.records_analyzed.toLocaleString()} />
-              </div>
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  <StatBlock
+                    label="Potential leakage"
+                    value={
+                      potentialLeakage ? (
+                        <AnimatedCounter
+                          value={Number(potentialLeakage.amount)}
+                          prefix={`${potentialLeakage.currency} `}
+                        />
+                      ) : (
+                        "—"
+                      )
+                    }
+                    risk
+                  />
+                  <StatBlock label="High confidence" value={<AnimatedCounter value={data.high_confidence_count} />} />
+                  <StatBlock label="Findings" value={<AnimatedCounter value={data.finding_count} />} />
+                  <StatBlock label="Records analyzed" value={<AnimatedCounter value={data.records_analyzed} />} />
+                </div>
 
-              <div className="flex flex-col gap-3">
-                {data.top_findings.map((f) => {
-                  const isOpen = expanded === f.id;
-                  return (
-                    <div key={f.id} className="rounded-xl border border-ink-100 bg-white shadow-card">
-                      <button
-                        type="button"
-                        onClick={() => setExpanded(isOpen ? null : f.id)}
-                        className="flex w-full flex-col gap-3 p-5 text-left sm:flex-row sm:items-center sm:justify-between"
+                <motion.div
+                  className="flex flex-col gap-3"
+                  initial="hidden"
+                  animate="visible"
+                  variants={{ visible: { transition: { staggerChildren: 0.08 } } }}
+                >
+                  {data.top_findings.map((f) => {
+                    const isOpen = expanded === f.id;
+                    return (
+                      <motion.div
+                        key={f.id}
+                        variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0 } }}
+                        whileHover={{ y: -2 }}
+                        className="rounded-xl border border-ink-100 bg-white shadow-card transition-shadow hover:shadow-lg"
                       >
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2">
-                            <Badge tone="neutral">{CATEGORY_LABELS[f.category] ?? f.category}</Badge>
-                            <ConfidenceBadge confidence={f.confidence} />
-                          </div>
-                          <h3 className="mt-2 text-sm font-semibold text-ink-950">{f.title}</h3>
-                          <p className="mt-1 text-sm text-ink-500">{f.summary}</p>
-                        </div>
-                        <div className="shrink-0 text-right">
-                          <p className="text-lg font-semibold tabular-nums text-ink-950">
-                            {money(
-                              f.financial_impact.currency,
-                              f.financial_impact.amount,
-                              f.financial_impact.is_recurring,
-                              f.financial_impact.recurrence_period
-                            )}
-                          </p>
-                          <p className="text-xs font-medium text-ink-400">{isOpen ? "Hide evidence ↑" : "View evidence ↓"}</p>
-                        </div>
-                      </button>
-
-                      {isOpen && (
-                        <div className="border-t border-ink-100 px-5 py-5">
-                          <p className="text-sm leading-relaxed text-ink-700">{f.why_it_matters}</p>
-
-                          {f.evidence.length > 0 && (
-                            <div className="mt-4 overflow-x-auto rounded-lg border border-ink-100">
-                              <table className="w-full text-left text-sm">
-                                <thead className="bg-ink-50 text-xs uppercase tracking-wide text-ink-400">
-                                  <tr>
-                                    {Object.keys(f.evidence[0]?.display_fields ?? {}).map((key) => (
-                                      <th key={key} className="px-3 py-2 font-medium">
-                                        {key.replace(/_/g, " ")}
-                                      </th>
-                                    ))}
-                                  </tr>
-                                </thead>
-                                <tbody className="divide-y divide-ink-100">
-                                  {f.evidence.slice(0, 5).map((e, i) => (
-                                    <tr key={i}>
-                                      {Object.values(e.display_fields).map((val, j) => (
-                                        <td key={j} className="px-3 py-2 text-ink-700">
-                                          {val === null || val === undefined ? "—" : String(val)}
-                                        </td>
-                                      ))}
-                                    </tr>
-                                  ))}
-                                </tbody>
-                              </table>
+                        <button
+                          type="button"
+                          onClick={() => setExpanded(isOpen ? null : f.id)}
+                          className="flex w-full flex-col gap-3 p-5 text-left sm:flex-row sm:items-center sm:justify-between"
+                        >
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2">
+                              <Badge tone="neutral">{CATEGORY_LABELS[f.category] ?? f.category}</Badge>
+                              <ConfidenceBadge confidence={f.confidence} />
                             </div>
-                          )}
-
-                          <p className="mt-4 rounded-lg bg-ink-50 px-4 py-3 font-mono text-xs text-ink-700">
-                            {f.calculation.formula}
-                          </p>
-
-                          {f.what_we_dont_know.length > 0 && (
-                            <p className="mt-4 text-xs text-ink-400">
-                              What we don&apos;t know: {f.what_we_dont_know.join(" ")}
+                            <h3 className="mt-2 text-sm font-semibold text-ink-950">{f.title}</h3>
+                            <p className="mt-1 text-sm text-ink-500">{f.summary}</p>
+                          </div>
+                          <div className="shrink-0 text-right">
+                            <p className="text-lg font-semibold tabular-nums text-ink-950">
+                              {money(
+                                f.financial_impact.currency,
+                                f.financial_impact.amount,
+                                f.financial_impact.is_recurring,
+                                f.financial_impact.recurrence_period
+                              )}
                             </p>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
+                            <p className="text-xs font-medium text-ink-400">
+                              {isOpen ? "Hide evidence ↑" : "View evidence ↓"}
+                            </p>
+                          </div>
+                        </button>
 
-              <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-ink-200 bg-paper px-6 py-8 text-center">
-                <p className="text-sm text-ink-600">
-                  This is real detection on synthetic data. Upload your own to find what your
-                  business is actually losing.
-                </p>
-                <Link href="/signup">
-                  <Button size="lg">Find my leaks</Button>
-                </Link>
-              </div>
-            </div>
-          )}
+                        <AnimatePresence initial={false}>
+                          {isOpen && (
+                            <motion.div
+                              initial={{ height: 0, opacity: 0 }}
+                              animate={{ height: "auto", opacity: 1 }}
+                              exit={{ height: 0, opacity: 0 }}
+                              transition={{ duration: 0.3, ease: "easeInOut" }}
+                              className="overflow-hidden border-t border-ink-100"
+                            >
+                              <div className="px-5 py-5">
+                                <p className="text-sm leading-relaxed text-ink-700">{f.why_it_matters}</p>
+
+                                {f.evidence.length > 0 && (
+                                  <div className="mt-4 overflow-x-auto rounded-lg border border-ink-100">
+                                    <table className="w-full text-left text-sm">
+                                      <thead className="bg-ink-50 text-xs uppercase tracking-wide text-ink-400">
+                                        <tr>
+                                          {Object.keys(f.evidence[0]?.display_fields ?? {}).map((key) => (
+                                            <th key={key} className="px-3 py-2 font-medium">
+                                              {key.replace(/_/g, " ")}
+                                            </th>
+                                          ))}
+                                        </tr>
+                                      </thead>
+                                      <tbody className="divide-y divide-ink-100">
+                                        {f.evidence.slice(0, 5).map((e, i) => (
+                                          <tr key={i} className="transition-colors hover:bg-paper">
+                                            {Object.values(e.display_fields).map((val, j) => (
+                                              <td key={j} className="px-3 py-2 text-ink-700">
+                                                {val === null || val === undefined ? "—" : String(val)}
+                                              </td>
+                                            ))}
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                )}
+
+                                <p className="mt-4 rounded-lg bg-ink-50 px-4 py-3 font-mono text-xs text-ink-700">
+                                  {f.calculation.formula}
+                                </p>
+
+                                {f.what_we_dont_know.length > 0 && (
+                                  <p className="mt-4 text-xs text-ink-400">
+                                    What we don&apos;t know: {f.what_we_dont_know.join(" ")}
+                                  </p>
+                                )}
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </motion.div>
+                    );
+                  })}
+                </motion.div>
+
+                <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-ink-200 bg-paper px-6 py-8 text-center">
+                  <p className="text-sm text-ink-600">
+                    This is real detection on synthetic data. Upload your own to find what your
+                    business is actually losing.
+                  </p>
+                  <Link href="/signup">
+                    <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.98 }}>
+                      <Button size="lg">Find my leaks</Button>
+                    </motion.div>
+                  </Link>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
     </section>
   );
 }
 
-function StatBlock({ label, value, risk }: { label: string; value: string; risk?: boolean }) {
+function StatBlock({ label, value, risk }: { label: string; value: React.ReactNode; risk?: boolean }) {
   return (
-    <div className="rounded-lg border border-ink-100 bg-white p-4">
+    <div className="rounded-lg border border-ink-100 bg-white p-4 transition-colors hover:border-ink-300">
       <p className="text-[11px] font-medium uppercase tracking-wide text-ink-400">{label}</p>
       <p className={`mt-1.5 text-lg font-semibold tabular-nums ${risk ? "text-accent-600" : "text-ink-950"}`}>
         {value}

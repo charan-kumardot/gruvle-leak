@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { Reveal } from "@/components/marketing/Reveal";
 
 const FAQS = [
   {
@@ -35,14 +37,14 @@ export function Faq() {
   return (
     <section id="faq" className="border-t border-ink-100 bg-white">
       <div className="mx-auto max-w-3xl px-6 py-20">
-        <div className="text-center">
+        <Reveal className="text-center">
           <p className="text-xs font-semibold uppercase tracking-wide text-accent-500">FAQ</p>
           <h2 className="mt-3 text-2xl font-semibold tracking-tight text-ink-950 sm:text-3xl">
             Questions worth asking before you upload real data.
           </h2>
-        </div>
+        </Reveal>
 
-        <div className="mt-10 flex flex-col divide-y divide-ink-100 rounded-xl border border-ink-100">
+        <Reveal delay={0.1} className="mt-10 flex flex-col divide-y divide-ink-100 rounded-xl border border-ink-100">
           {FAQS.map((item, i) => {
             const isOpen = open === i;
             return (
@@ -50,18 +52,34 @@ export function Faq() {
                 <button
                   type="button"
                   onClick={() => setOpen(isOpen ? null : i)}
-                  className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left"
+                  className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left transition-colors hover:bg-paper"
                 >
                   <span className="text-sm font-medium text-ink-900">{item.q}</span>
-                  <span className={`shrink-0 text-ink-400 transition-transform ${isOpen ? "rotate-45" : ""}`}>
+                  <motion.span
+                    animate={{ rotate: isOpen ? 45 : 0 }}
+                    transition={{ duration: 0.25 }}
+                    className="shrink-0 text-lg leading-none text-ink-400"
+                  >
                     +
-                  </span>
+                  </motion.span>
                 </button>
-                {isOpen && <p className="px-5 pb-5 text-sm leading-relaxed text-ink-500">{item.a}</p>}
+                <AnimatePresence initial={false}>
+                  {isOpen && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.25, ease: "easeInOut" }}
+                      className="overflow-hidden"
+                    >
+                      <p className="px-5 pb-5 text-sm leading-relaxed text-ink-500">{item.a}</p>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             );
           })}
-        </div>
+        </Reveal>
       </div>
     </section>
   );
